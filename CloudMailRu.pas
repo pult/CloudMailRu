@@ -640,9 +640,10 @@ begin
 		end;
 	end;
 
-	Result := FS_FILE_OK;
 	remotePath := UrlEncode(StringReplace(remotePath, WideString('\'), WideString('/'), [rfReplaceAll, rfIgnoreCase]));
+	Log(MSGTYPE_IMPORTANTERROR, 'Processing download from ' + remotePath + ' to ' + localPath);
 	try
+		Log(MSGTYPE_IMPORTANTERROR, 'TFileStream.Create(\\?\' + localPath + ', fmCreate)');
 		FileStream := TFileStream.Create('\\?\' + localPath, fmCreate);
 	except
 		on E: Exception do
@@ -655,19 +656,23 @@ begin
 	if (Assigned(FileStream)) then
 	begin
 		try
+			Log(MSGTYPE_IMPORTANTERROR, 'FileStream assigned, handle '+FileStream.Handle.ToString());
 			Result := self.HTTPGetFile(self.Shard + remotePath, FileStream);
+			Log(MSGTYPE_IMPORTANTERROR, 'HTTPGetFile result: ' + Result.ToString() + ', FileStream.size: ' + FileStream.size.ToString());
 		except
 			on E: Exception do
 			begin
 				Log(MSGTYPE_IMPORTANTERROR, 'File receiving error ' + E.Message);
 			end;
 		end;
-		FlushFileBuffers(FileStream.Handle);
+		Log(MSGTYPE_IMPORTANTERROR, 'Freeing FileStream');
 		FileStream.free;
-	end;
+	end
+	else Log(MSGTYPE_IMPORTANTERROR, 'Can''t assign file stream at ' + FileStream.FileName);
 
 	if Result <> FS_FILE_OK then
 	begin
+		Log(MSGTYPE_IMPORTANTERROR, 'Result is not FS_FILE_OK, deleting file \\?\' + localPath);
 		System.SysUtils.deleteFile('\\?\' + localPath);
 	end;
 end;
@@ -1025,7 +1030,7 @@ begin
 	ToPath := UrlEncode(StringReplace(ToPath, WideString('\'), WideString('/'), [rfReplaceAll, rfIgnoreCase]));
 	URL := 'https://cloud.mail.ru/api/v2/file/move';
 	PostResult := false;
-		PostData := TStringStream.Create('api=2&home=' + OldName + '&folder=' + ToPath + '&token=' + self.token + '&build=' + self.build + '&email=' + self.user + '%40' + self.domain + '&x-email=' + self.user + '%40' + self.domain + '&x-page-id=' + self.x_page_id + '&conflict', TEncoding.UTF8);
+	PostData := TStringStream.Create('api=2&home=' + OldName + '&folder=' + ToPath + '&token=' + self.token + '&build=' + self.build + '&email=' + self.user + '%40' + self.domain + '&x-email=' + self.user + '%40' + self.domain + '&x-page-id=' + self.x_page_id + '&conflict', TEncoding.UTF8);
 	try
 		PostResult := self.HTTPPost(URL, PostData, PostAnswer);
 	except

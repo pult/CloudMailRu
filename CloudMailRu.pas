@@ -44,6 +44,7 @@ const
 	CLOUD_UNPUBLISH = false;
 
 type
+
 	TCloudMailRuDirListingItem = Record
 		tree: WideString;
 		name: WideString;
@@ -475,6 +476,7 @@ var
 	HTTP: TIdHTTP;
 	SSL: TIdSSLIOHandlerSocketOpenSSL;
 	Socks: TIdSocksInfo;
+	HTTPResult: WideString;
 begin
 	Result := FS_FILE_OK;
 	try
@@ -482,7 +484,12 @@ begin
 		HTTP.Request.ContentType := 'application/octet-stream';
 		HTTP.Response.KeepAlive := true;
 		HTTP.OnWork := self.HttpProgress;
+		Log(MSGTYPE_IMPORTANTERROR, 'HTTP.get start');
+
 		HTTP.Get(URL, FileStream);
+
+		Log(MSGTYPE_IMPORTANTERROR, 'HTTP.get end, response code: ' + HTTP.ResponseCode.ToString() + ', response text: ' + HTTP.ResponseText+', redirections: '+HTTP.RedirectCount.ToString());
+
 		self.HTTPDestroy(HTTP, SSL, Socks);
 	except
 		on E: EAbort do
@@ -656,7 +663,7 @@ begin
 	if (Assigned(FileStream)) then
 	begin
 		try
-			Log(MSGTYPE_IMPORTANTERROR, 'FileStream assigned, handle '+FileStream.Handle.ToString());
+			Log(MSGTYPE_IMPORTANTERROR, 'FileStream assigned, handle ' + FileStream.Handle.ToString());
 			Result := self.HTTPGetFile(self.Shard + remotePath, FileStream);
 			Log(MSGTYPE_IMPORTANTERROR, 'HTTPGetFile result: ' + Result.ToString() + ', FileStream.size: ' + FileStream.size.ToString());
 		except

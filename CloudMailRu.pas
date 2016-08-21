@@ -115,6 +115,7 @@ type
 	protected
 		procedure HTTPInit(var HTTP: TIdHTTP; var SSL: TIdSSLIOHandlerSocketOpenSSL; var Socks: TIdSocksInfo; var Cookie: TIdCookieManager);
 		procedure HTTPDestroy(var HTTP: TIdHTTP; var SSL: TIdSSLIOHandlerSocketOpenSSL; var Socks: TIdSocksInfo);
+		procedure HTTPLogRedirect(Sender: TObject; var dest: string; var NumRedirect: integer; var Handled: Boolean; var VMethod: string);
 	public
 		ExternalPluginNr: integer;
 		ExternalSourceName: PWideChar;
@@ -135,6 +136,10 @@ type
 		function mvFile(OldName, NewName: WideString): integer; // объединяющая функция, определяет делать rename или move
 		function publishFile(path: WideString; var PublicLink: WideString; publish: Boolean = CLOUD_PUBLISH): Boolean;
 		function statusFile(path: WideString; var FileInfo: TCloudMailRuDirListingItem): Boolean;
+
+	end;
+
+	TExIdHttp = class(TIdHTTP)
 
 	end;
 
@@ -485,10 +490,12 @@ begin
 		HTTP.Response.KeepAlive := true;
 		HTTP.OnWork := self.HttpProgress;
 		Log(MSGTYPE_IMPORTANTERROR, 'HTTP.get start');
+		HTTP.RedirectMaximum := 50;
+		HTTP.OnRedirect := self.HTTPLogRedirect;
 
 		HTTP.Get(URL, FileStream);
 
-		Log(MSGTYPE_IMPORTANTERROR, 'HTTP.get end, response code: ' + HTTP.ResponseCode.ToString() + ', response text: ' + HTTP.ResponseText+', redirections: '+HTTP.RedirectCount.ToString());
+		Log(MSGTYPE_IMPORTANTERROR, 'HTTP.get end, response code: ' + HTTP.ResponseCode.ToString() + ', response text: ' + HTTP.ResponseText + ', redirections: ' + HTTP.RedirectCount.ToString());
 
 		self.HTTPDestroy(HTTP, SSL, Socks);
 	except
@@ -524,6 +531,11 @@ begin
 	// HTTP.ConnectTimeout:=10;
 
 	HTTP.Request.UserAgent := 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.57 Safari/537.17/TCWFX(' + PlatformX + ')';
+end;
+
+procedure TCloudMailRu.HTTPLogRedirect(Sender: TObject; var dest: string; var NumRedirect: integer; var Handled: Boolean; var VMethod: string);
+begin
+	Log(MSGTYPE_IMPORTANTERROR, 'Redirection from ' + Sender.ToString + ', destination: ' + dest + ', num: ' + NumRedirect.ToString() + ', method: ' + VMethod);
 end;
 
 procedure TCloudMailRu.HTTPDestroy(var HTTP: TIdHTTP; var SSL: TIdSSLIOHandlerSocketOpenSSL; var Socks: TIdSocksInfo);

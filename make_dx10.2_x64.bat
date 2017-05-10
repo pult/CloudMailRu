@@ -2,6 +2,7 @@
 
 @set _compiler=25w64
 
+@if exist "MailRuCloudResource.res" del /Q "MailRuCloudResource.res"
 @if exist "MailRuCloudResource.res" goto L_MAIN
 @echo\
 @echo\ make MailRuCloudResource.rc
@@ -16,3 +17,4 @@
 @echo\
 @call make_prj.cmd %_compiler% MailRuCloud.dpr
 @call clean.cmd
+@if exist "MailRuCloudResource.res" del /Q "MailRuCloudResource.res"
